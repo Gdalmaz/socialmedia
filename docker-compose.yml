@@ -1,0 +1,98 @@
+version: "3"
+services:
+  app_postgres:
+    image: postgres:latest
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - app_postgres_vol:/var/lib/postgresql/data
+    networks:
+      - app_network
+
+  Auth:
+    container_name: auth
+    image: cosmtrek/air:v1.44.0
+    restart: no
+    working_dir: /app
+    volumes:
+      - ./Auth:/app
+      - ./.env:/app/.env
+    ports:
+      - "9090:9090"
+    environment:
+      GOFLAGS: "-buildvcs=false"
+    networks:
+      - app_network
+
+  Post:
+    container_name: post
+    image: cosmtrek/air:v1.44.0
+    restart: no
+    working_dir: /app
+    volumes:
+      - ./Post:/app
+      - ./.env:/app/.env
+    ports:
+      - "9091:9091"
+    environment:
+      GOFLAGS: "-buildvcs=false"
+    networks:
+      - app_network
+
+  Mail:
+    container_name: mail
+    image: cosmtrek/air:v1.44.0
+    restart: no
+    working_dir: /app
+    volumes:
+      - ./Mail:/app
+      - ./.env:/app/.env
+    ports:
+      - "9092:9092"
+    environment:
+      GOFLAGS: "-buildvcs=false"
+    networks:
+      - app_network
+
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - app_network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - app_network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: always
+    ports:
+      - "9093:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - app_network
+
+volumes:
+  app_postgres_vol:
+
+networks:
+  app_network:
+    driver: bridge
